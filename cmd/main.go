@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/joho/godotenv" // Pour charger les variables d'environnement
 )
 
+var db *sql.DB
+
 func main() {
 	// Charger les variables d'environnement
 	if err := godotenv.Load(); err != nil {
@@ -17,12 +20,13 @@ func main() {
 	}
 
 	// 1. Connexion à la base de données MariaDB avec des variables d'env
-	db, err := database.ConnectDB()
-	if err != nil {
-		log.Fatal("Erreur de connexion à la base de données :", err)
-	}
+	db = database.ConnectDB()
+	defer db.Close()
 	// Appliquer le middleware CORS à toutes les routes
-	handlerWithCORS := infrastructure.CORSMiddleware(finalMux)
+	mux := http.NewServeMux()
+	finalMux := http.NewServeMux()
+	finalMux.Handle("/", mux)
+	handlerWithCORS := cors.CORSMiddleware(finalMux)
 
 	// 7. Démarrer le serveur HTTP
 	log.Println("Serveur démarré sur le port 8080")
